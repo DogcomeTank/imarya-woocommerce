@@ -206,6 +206,7 @@ dataLayer.push({
 function AddCustomHeaderToPackingList( $table_headers, $order_id, $type ) {
 		// add custom columns for packing and pick lists
 	if ( 'packing-list' === $type || 'pick-list' === $type ) {
+		$table_headers['size'] = 'Size';
 		$table_headers['image'] = 'Image';
         $table_headers['location'] = 'ProductID';
 	}
@@ -226,9 +227,13 @@ add_filter( 'wc_pip_document_table_headers', 'AddCustomHeaderToPackingList', 10,
 function AddCustomDataToPackingList( $table_row_cells, $document_type, $item_id, $item, $product, $order ) {
 	// set custom column content for invoices
 	if ( 'packing-list' === $document_type ) {
+// 		add size
+		$table_row_cells['size'] = $product->attribute_summary;
+// 		add image
         $TheProductThumnail =  $product->id;
         $featured_img_url = get_the_post_thumbnail_url($TheProductThumnail); 
 		$table_row_cells['image'] = "<img src='".$featured_img_url."' height='50px' width='50px'>";
+// 		add atum location
 		global $wpdb;
         $sl_atum_location = $wpdb->get_var( "
     		SELECT $wpdb->terms.name
