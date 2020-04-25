@@ -23,23 +23,24 @@ function woodmart_parent_theme_enqueue_styles() {
 
 // SL Swiper
 function register_w3_style() {
-  if ( is_page( 'home-page-v3' ) ) {
-    wp_enqueue_style( 'w3-style',
+	
+	wp_enqueue_style( 'w3-style',
 		get_stylesheet_directory_uri() . '/assets/css/w3.css'
 	);
-	wp_enqueue_style( 'slick-style', 'https://unpkg.com/swiper/css/swiper.min.css');
-	wp_enqueue_script( 'slick-script', 'https://unpkg.com/swiper/js/swiper.min.js');
-  }
+
+	  if ( is_page( 'imarya-2' ) ) {
+		wp_enqueue_style( 'slick-style',
+			get_stylesheet_directory_uri() . '/assets/slick/slick.css'
+		);
+		wp_enqueue_script( 'slick-script',
+			get_stylesheet_directory_uri() . '/assets/slick/slick.min.js','true'
+		);
+		wp_enqueue_script( 'sl-script',
+			get_stylesheet_directory_uri() . '/assets/js/sljs.js', array('slick-script'),'true'
+		);
+	  }
 }
 add_action( 'wp_enqueue_scripts', 'register_w3_style' );
-
-function sl_add_js_to_footer() {
-    if ( is_page( 'home-page-v3' ) ) {
-        
-	wp_enqueue_script( 'sl-custom-script', get_stylesheet_directory_uri() . '/assets/js/sljs.js',array(), date("h:i:s"));
-    }
-}
-add_action('wp_footer', 'sl_add_js_to_footer');
 
 // SL Swiper end
 
@@ -53,7 +54,7 @@ $initialize = new \AMPLUS\Core\Initialize();
 function custom_add_google_fonts() {
 	wp_enqueue_style( 'custom-google-fonts', 'https://fonts.googleapis.com/css?family=Playfair+Display:400,700&display=swap', false );
 }
-add_action( 'wp_enqueue_scripts', 'custom_add_google_fonts' );
+// add_action( 'wp_enqueue_scripts', 'custom_add_google_fonts' );
 
 function add_meta_tags() {
 ?>
@@ -93,16 +94,40 @@ function change_wp_email_sender_address() {
 add_filter('wp_mail_from', 'change_wp_email_sender_address');
 
 
+// Aelia Currency switcher plugins
+/**
+ * Uses a custom geolocation function to detect customer's location.
+ * 
+ * @param string country_code The country code passed by previous filters (if any).
+ * @return string A country code, or an empty string if a country code was not passed
+ * by WP Engine.
+ */
+add_filter('wc_aelia_ip2location_before_get_country_code', function($country_code) {
+  // Return the country code detected by WP Engine, if it was set
+  if(!empty($_SERVER['HTTP_GEOIP_COUNTRY_CODE'])) {
+    $country_code = $_SERVER['HTTP_GEOIP_COUNTRY_CODE'];
+  }
+  return $country_code;
+}, 10, 1);
 
+// END Aelia Currency switcher plugins
 
-
-
+// Use both redeem points and Coupon - Yith Points and Rewards
+if ( ! function_exists( 'yith_ywpar_coupon_fix' ) && defined( 'YITH_YWPAR_PREMIUM' ) ) {
+    add_filter( 'woocommerce_apply_with_individual_use_coupon', 'yith_ywpar_coupon_fix', 10, 2 );
+    function yith_ywpar_coupon_fix( $bool, $the_coupon ) {
+        if (  substr( $the_coupon->get_code(), 0, 6 ) === 'ywpar_' ) {
+            $bool = true;
+        }
+        return $bool;
+    }
+}
+// End Use both redeem points and Coupon
 
 //google tag manager
 add_action('wp_head','my_analytics', 20); 
   function my_analytics() {
 ?> 
-
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -110,6 +135,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-P5W72WZ');</script>
 <!-- End Google Tag Manager -->
+
 
 <?php
 }
@@ -166,7 +192,7 @@ dataLayer.push({
 </script>
 <?php
 }
-//Google Enhanced Ecommerce end
+//end Google Enhanced Ecommerce 
 
 //Packing list
 /**
@@ -302,16 +328,41 @@ add_filter( 'wc_pip_document_customer_note', 'change_customer_note_color');
 
 //packing list end
 
-add_action('admin_head', 'my_custom_fonts');
+// Add Current year to footer copyright
+function footer_current_year_shortcode() {
+    $year = date('Y');
+    return $year;
+}
+add_shortcode('footer_current_year', 'footer_current_year_shortcode');
 
-function my_custom_fonts() {
+//admin bar customize
+add_action('admin_head', 'sl_custom_style');
+function sl_custom_style() {
   echo '<style>
-  .icl_tm_wrap > .overlay{
-      display: none !important;
+  .overlay{
+  display: none !important;
+  }
+  #wpadminbar{
+	height: auto;
   }
   </style>';
 }
+function remove_toolbar_items($wp_adminbar) {
+	$wp_adminbar->remove_node('wp-logo');
+  	$wp_adminbar->remove_node('theme-dashboard');
+	$wp_adminbar->remove_node('stats');
+	$wp_adminbar->remove_node('new-content');
+	$wp_adminbar->remove_node('new_draft');
+  	$wp_adminbar->remove_node('updates');
+  	$wp_adminbar->remove_node('comments');
+  	$wp_adminbar->remove_node('search');
+  	$wp_adminbar->remove_node('notes');
+	
+}
+add_action('admin_bar_menu', 'remove_toolbar_items', 999);
 
+
+//end admin bar customize
 
 
 
@@ -356,6 +407,79 @@ function custom_woocommerce_shipment_tracking_default_provider( $provider ) {
 }
 //Plugin WooCommerce Shipment Tracking
 
+//SL Shortcode
+
+/*
+ * List WooCommerce Products by tags
+ *
+ * ex: [show_woo_products_by_tags tags="shoes,socks"]
+ */
+function woo_products_by_tags_shortcode( $atts, $content = null ) {
+  
+	// Get attribuets
+	extract(shortcode_atts(array(
+		"tags" => ''
+	), $atts));
+	
+	ob_start();
+	// Define Query Arguments
+	$args = array( 
+				'post_type' 	 => 'product', 
+				'posts_per_page' => 5, 
+				'product_tag' 	 => $tags 
+				);
+	
+	// Create the new query
+	$loop = new WP_Query( $args );
+	
+	// Get products number
+	$product_count = $loop->post_count;
+	
+	// If results
+	if( $product_count > 0 ) :
+	
+		echo '<ul class="products">';
+		
+			// Start the loop
+			while ( $loop->have_posts() ) : $loop->the_post(); global $product;
+			
+				global $post;
+				
+				echo "<p>" . $thePostID = $post->post_title. " </p>";
+				
+				if (has_post_thumbnail( $loop->post->ID )) 
+					echo  get_the_post_thumbnail($loop->post->ID, 'shop_catalog'); 
+				else 
+					echo '<img src="'.$woocommerce->plugin_url().'/assets/images/placeholder.png" alt="" width="'.$woocommerce->get_image_size('shop_catalog_image_width').'px" height="'.$woocommerce->get_image_size('shop_catalog_image_height').'px" />';
+		
+			endwhile;
+		
+		echo '</ul><!--/.products-->';
+	
+	else :
+	
+		_e('No product matching your criteria.');
+	
+	endif; // endif $product_count > 0
+	
+	return ob_get_clean();
+}
+add_shortcode("show_woo_products_by_tags", "woo_products_by_tags_shortcode");
+
+// End SL shortcode
+
+// Query Monitor error fix
+add_filter( 'https_ssl_verify', '__return_true', PHP_INT_MAX );
+ 
+add_filter( 'http_request_args', 'http_request_force_ssl_verify', PHP_INT_MAX );
+ 
+function http_request_force_ssl_verify( $args ) {
+ 
+        $args['sslverify'] = true;
+ 
+        return $args;
+}
+ 
 
 
 add_action( 'woocommerce_no_products_found', 'show_featured_products_on_no_products_found', 1 );
@@ -363,6 +487,7 @@ function show_featured_products_on_no_products_found() {
 	echo '<p class="product-not-found">' . esc_html__( 'No products were found matching your selection.', 'woocommerce' ) . '</p>';
 }
 
+// Yith Points and Rewards
 if( !function_exists('ywcpar_remove_notice_classes')){
 add_filter('yith_par_messages_class', 'ywcpar_remove_notice_classes' ,10 , 1 );
  function ywcpar_remove_notice_classes( $classes ){
