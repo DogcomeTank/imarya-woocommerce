@@ -206,9 +206,14 @@ dataLayer.push({
 function AddCustomHeaderToPackingList( $table_headers, $order_id, $type ) {
 		// add custom columns for packing and pick lists
 	if ( 'packing-list' === $type || 'pick-list' === $type ) {
+// 		remove sku
+ 		unset( $table_headers['sku'] );
+		
+// 		add
 		$table_headers['size'] = 'Size';
 		$table_headers['image'] = 'Image';
         $table_headers['location'] = 'ProductID';
+		unset( $table_headers['sku'] );
 	}
 	return $table_headers;
 }
@@ -227,6 +232,8 @@ add_filter( 'wc_pip_document_table_headers', 'AddCustomHeaderToPackingList', 10,
 function AddCustomDataToPackingList( $table_row_cells, $document_type, $item_id, $item, $product, $order ) {
 	// set custom column content for invoices
 	if ( 'packing-list' === $document_type ) {
+// 		remove sku
+		unset( $table_row_cells['sku'] );
 // 		add size
 		$table_row_cells['size'] = $product->attribute_summary;
 // 		add image
